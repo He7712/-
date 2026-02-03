@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>易经 + 八字 推理系统（离线全功能｜小清新主题）</title>
+
+<style>
+  /* ===============================
+     小清新主题（浅色 · 干净 · 耐看）
+  ================================ */
+  :root{
+    --bg:#f6faf9;            /* 页面底色：清透薄荷白 */
+    --bg2:#eef6ff;           /* 顶部轻渐变辅助 */
+    --card:#ffffff;          /* 卡片白 */
+    --muted:#64748b;         /* 次级文字（柔和灰蓝） */
+    --text:#0f172a;          /* 主文字（深蓝黑，不刺眼） */
+    --line:#e5edf4;          /* 边框线 */
+    --accent:#2f7cf6;        /* 主色：清爽蓝（只用一种强调色） */
+    --accent2:#6ee7d8;       /* 轻薄绿点缀（少量使用） */
+    --good:#16a34a;
+    --warn:#d97706;
+    --bad:#dc2626;
+
+    --input:#f8fbff;         /* 输入框底 */
+    --shadow: 0 12px 30px rgba(15, 23, 42, .08);
+  }
+
+  body{
+    margin:0;
+    background: linear-gradient(180deg, var(--bg2), var(--bg));
+    color:var(--text);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  }
+
+  .wrap{max-width:1180px;margin:18px auto;padding:0 12px;}
+  h1{font-size:18px;margin:0 0 10px}
+
+  .sub{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.65;
+    margin-bottom:12px;
+  }
+
+  /* Tabs */
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+  .tab{
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    color:var(--muted);
+    cursor:pointer;
+    background: rgba(255,255,255,.9);
+    box-shadow: 0 6px 14px rgba(15,23,42,.04);
+  }
+  .tab.active{
+    color:#ffffff;
+    background: linear-gradient(90deg, var(--accent), #5aa6ff);
+    border:none;
+    font-weight:700;
+    box-shadow: 0 10px 20px rgba(47,124,246,.18);
+  }
+
+  .grid{display:grid;grid-template-columns:390px 1fr;gap:12px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+  /* Card */
+  .card{
+    background: rgba(255,255,255,.92);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(6px);
+  }
+
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+
+  input,select,textarea,button{
+    width:100%;
+    box-sizing:border-box;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background: var(--input);
+    color:var(--text);
+    padding:10px 10px;
+    outline:none;
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color: rgba(47,124,246,.55);
+    box-shadow: 0 0 0 3px rgba(47,124,246,.12);
+    background:#ffffff;
+  }
+
+  textarea{min-height:60px;resize:vertical}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .actions{display:flex;gap:10px;margin-top:12px}
+  .actions button{flex:1}
+
+  /* Buttons */
+  .btnPrimary{
+    background: linear-gradient(90deg, var(--accent), #5aa6ff);
+    border:none;
+    color:#ffffff;
+    font-weight:800;
+    box-shadow: 0 10px 22px rgba(47,124,246,.18);
+  }
+  .btnPrimary:hover{filter:brightness(0.98)}
+  .btnGhost{
+    background: #ffffff;
+    border:1px solid var(--line);
+    color: var(--text);
+  }
+  .btnGhost:hover{background:#f3f7ff}
+
+  .hr{height:1px;background:var(--line);margin:12px 0}
+
+  .title2{
+    font-size:14px;
+    margin:0 0 10px;
+    color:#0f172a;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    font-size:12px;
+    color:var(--muted);
+    margin:6px 6px 0 0;
+    background: rgba(255,255,255,.9);
+  }
+
+  .k{color:var(--accent)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .small{font-size:12px;color:var(--muted);line-height:1.7}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:760px){.split{grid-template-columns:1fr}}
+
+  .scoreRow{display:grid;grid-template-columns:110px 1fr 48px;gap:10px;align-items:center;margin:8px 0}
+  .bar{
+    height:10px;
+    border-radius:999px;
+    background:#eef5ff;
+    border:1px solid var(--line);
+    overflow:hidden
+  }
+  .bar>div{
+    height:100%;
+    background: linear-gradient(90deg, var(--accent), #7bbdff);
+  }
+
+  .ok{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+
+  .tag{
+    font-size:12px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--muted);
+    background: rgba(255,255,255,.85);
+  }
+
+  table{width:100%;border-collapse:collapse}
+  th,td{
+    border-bottom:1px solid var(--line);
+    padding:10px 6px;
+    text-align:left;
+    font-size:12px;
+    color:var(--muted)
+  }
+  th{color:#0f172a;font-weight:650}
+
+  .dangerBox{
+    border:1px dashed rgba(47,124,246,.35);
+    border-radius:12px;
+    padding:10px;
+    background: linear-gradient(180deg, rgba(47,124,246,.06), rgba(110,231,216,.06));
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.7
+  }
+
+  .hexBox{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:760px){.hexBox{grid-template-columns:1fr}}
+
+  .hex{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    background: rgba(248,251,255,.9);
+  }
+
+  .lines{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .lineY{height:10px;border-radius:999px;background: linear-gradient(90deg, var(--accent), #7bbdff)}
+  .lineN{display:flex;gap:10px}
+  .lineN span{flex:1;height:10px;border-radius:999px;background: linear-gradient(90deg, var(--accent), #7bbdff)}
+
+  .badge{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    font-size:12px;
+    color:#0f172a;
+    background: rgba(255,255,255,.9);
+  }
+
+  .hide{display:none}
+
+  /* canvas（浅色主题） */
+  canvas{
+    width:100%;
+    height:140px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background: #ffffff;
+  }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>【 Mark专用 】易经 + 八字 推理系统</h1>
+  <div class="sub">
+    <b>八字算法说明：</b>“实用简化”：年柱按<b>立春约2/4</b>切换，月柱按公历月映射为寅月起（够用但非天文级精确）。
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-page="pageAll">综合报告</div>
+    <div class="tab" data-page="pageYJ">易经起卦</div>
+    <div class="tab" data-page="pageBZ">八字排盘</div>
+    <div class="tab" data-page="pageHistory">记录/导出</div>
+  </div>
+
+  <div class="grid">
+    <!-- 左侧输入 -->
+    <div class="card">
+      <div class="title2">填写信息</div>
+
+      <label>出生日期</label>
+      <input id="birthDate" type="date"/>
+
+      <div class="row">
+        <div>
+          <label>出生时间（24h）</label>
+          <input id="birthTime" type="time" value="06:00"/>
+        </div>
+        <div>
+          <label>性别（可选，用于婚恋倾向提示）</label>
+          <select id="gender">
+            <option value="unknown">不填</option>
+            <option value="male">男</option>
+            <option value="female">女</option>
+          </select>
+        </div>
+      </div>
+
+      <label>当前重点（可选）</label>
+      <textarea id="memo" placeholder="例如：更关心财运/婚姻/事业/健康；或你目前的行业/状态"></textarea>
+
+      <div class="actions">
+        <button class="btnPrimary" id="btnCalc">一键推理</button>
+        <button class="btnGhost" id="btnSave">保存记录</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="dangerBox">
+        <b>“全部都有”Mark已经合并好了：</b><br>
+        ① 易经起卦（本卦/变卦/变爻 + 评分）<br>
+        ② 八字排盘（四柱/十神/五行强弱 + 评分）<br>
+        ③ 综合报告（把两套结果合并输出）<br>
+        ④ 本机记录 + 导出/导入（换电脑不怕丢）
+      </div>
+    </div>
+
+    <!-- 右侧输出 -->
+    <div class="card">
+      <!-- 综合报告 -->
+      <div id="pageAll">
+        <div class="title2">综合报告</div>
+        <div id="summaryPills"></div>
+
+        <div class="hr"></div>
+        <div class="split">
+          <div>
+            <div class="title2">综合评分（易经 + 八字合并）</div>
+            <div id="scoresAll"></div>
+            <div class="small">说明：综合分 = 易经评分×40% + 八字评分×60%。</div>
+          </div>
+          <div>
+            <div class="title2">综合建议（更偏落地）</div>
+            <div class="small" id="adviceAll">-</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="title2">五行倾向图（八字估算）</div>
+        <canvas id="canvasWx" width="900" height="240"></canvas>
+      </div>
+
+      <!-- 易经 -->
+      <div id="pageYJ" class="hide">
+        <div class="title2">易经起卦</div>
+        <div id="yjPills"></div>
+        <div class="hexBox" style="margin-top:10px">
+          <div class="hex">
+            <div><span class="badge">本卦</span> <span class="mono" id="hexNameA">-</span></div>
+            <div class="small" id="hexInfoA">-</div>
+            <div class="lines" id="hexLinesA"></div>
+          </div>
+          <div class="hex">
+            <div><span class="badge">变卦</span> <span class="mono" id="hexNameB">-</span></div>
+            <div class="small" id="hexInfoB">-</div>
+            <div class="lines" id="hexLinesB"></div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="split">
+          <div>
+            <div class="title2">易经评分</div>
+            <div id="scoresYJ"></div>
+          </div>
+          <div>
+            <div class="title2">易经建议</div>
+            <div class="small" id="adviceYJ">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 八字 -->
+      <div id="pageBZ" class="hide">
+        <div class="title2">八字排盘（离线简化）</div>
+        <div id="bzPills"></div>
+
+        <div class="hr"></div>
+        <div class="title2">四柱</div>
+        <div class="small mono" id="baziTable">-</div>
+
+        <div class="hr"></div>
+        <div class="split">
+          <div>
+            <div class="title2">八字评分</div>
+            <div id="scoresBZ"></div>
+          </div>
+          <div>
+            <div class="title2">八字建议</div>
+            <div class="small" id="adviceBZ">-</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="title2">大运/流年（简化提示）</div>
+        <div class="small" id="luckBZ">-</div>
+      </div>
+
+      <!-- 历史/导出 -->
+      <div id="pageHistory" class="hide">
+        <div class="title2">记录管理</div>
+        <div class="small">记录默认存本机浏览器（localStorage）。建议你定期<b>导出 JSON</b>备份到电脑。</div>
+
+        <div class="actions" style="margin-top:10px">
+          <button id="btnExport" class="btnPrimary">导出JSON备份</button>
+          <button id="btnImport" class="btnGhost">导入JSON恢复</button>
+        </div>
+
+        <label>导入JSON（粘贴到这里）</label>
+        <textarea id="importBox" placeholder="把导出的JSON粘贴到这里，然后点“导入JSON恢复”"></textarea>
+
+        <div class="hr"></div>
+        <div class="title2">历史记录</div>
+        <div style="overflow:auto;max-height:360px;margin-top:10px">
+          <table id="historyTable">
+            <thead>
+              <tr><th>时间</th><th>出生</th><th>易经本卦</th><th>八字日柱</th><th>操作</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 公共工具 ===================== */
+const $ = sel => document.querySelector(sel);
+function mod(n,m){ return ((n % m) + m) % m; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function nowStr(){
+  const d=new Date(); const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function levelTag(v){
+  if(v>=75) return {txt:"偏强", cls:"ok"};
+  if(v>=55) return {txt:"中等", cls:"warn"};
+  return {txt:"偏弱", cls:"bad"};
+}
+function renderScoreBox(container, rows){
+  container.innerHTML = rows.map(r=>{
+    const t = levelTag(r.v);
+    return `
+      <div class="scoreRow">
+        <div>${r.k}</div>
+        <div class="bar"><div style="width:${r.v}%"></div></div>
+        <div class="${t.cls}">${r.v}</div>
+      </div>
+      <div class="small" style="margin:-2px 0 8px 0">等级：<span class="${t.cls}"><b>${t.txt}</b></span></div>
+    `;
+  }).join("");
+}
+
+/* ===================== 易经模块 ===================== */
+// 八卦顺序：乾兑离震巽坎艮坤 (0..7)
+const TRIGRAMS = [
+  { name:"乾", bits:"111", element:"金", keyword:"刚健、目标、规则、领导", advice:"定规则、抓主线、用系统赚钱" },
+  { name:"兑", bits:"110", element:"金", keyword:"沟通、合作、口碑、人脉", advice:"多谈判、多曝光、以口为财" },
+  { name:"离", bits:"101", element:"火", keyword:"名声、表达、创意、热度", advice:"做品牌、做内容，但别冲动" },
+  { name:"震", bits:"100", element:"木", keyword:"行动、突破、变化、启动", advice:"先干再调，避免一口吃太多" },
+  { name:"巽", bits:"011", element:"木", keyword:"学习、渗透、布局、耐心", advice:"走长期、做渠道、慢即是快" },
+  { name:"坎", bits:"010", element:"水", keyword:"风险、流动、信息、隐忧", advice:"控风险、留现金、别轻信" },
+  { name:"艮", bits:"001", element:"土", keyword:"停止、沉淀、守成、边界", advice:"收敛、做标准化、稳现金流" },
+  { name:"坤", bits:"000", element:"土", keyword:"承载、资源、团队、配合", advice:"靠团队与资源，但要立规矩" },
+];
+const GEN = { "木":"火", "火":"土", "土":"金", "金":"水", "水":"木" };
+const KILL = { "木":"土", "土":"水", "水":"火", "火":"金", "金":"木" };
+
+function hexBitsFromTrigrams(upperIdx, lowerIdx){
+  return TRIGRAMS[lowerIdx].bits + TRIGRAMS[upperIdx].bits; // bottom->top
+}
+function applyChange(bits, changeLine){ // changeLine 1..6 from bottom
+  const idx = changeLine-1;
+  const a = bits.split("");
+  a[idx] = (a[idx]==="1") ? "0" : "1";
+  return a.join("");
+}
+function trigramFromBits(bits3){
+  const i = TRIGRAMS.findIndex(t=>t.bits===bits3);
+  return i>=0?i:0;
+}
+function trigramsFromHexBits(bits6){
+  const lowerBits = bits6.slice(0,3);
+  const upperBits = bits6.slice(3,6);
+  return { lowerIdx: trigramFromBits(lowerBits), upperIdx: trigramFromBits(upperBits) };
+}
+function simpleHexName(upperIdx, lowerIdx){ return `${TRIGRAMS[upperIdx].name}上${TRIGRAMS[lowerIdx].name}下`; }
+
+function renderHexLines(container, bits, changeLineIndex=null){
+  container.innerHTML="";
+  for(let i=5;i>=0;i--){
+    const b=bits[i];
+    const row=document.createElement("div");
+    row.style.display="flex"; row.style.alignItems="center"; row.style.gap="10px";
+    const lineWrap=document.createElement("div"); lineWrap.style.flex="1";
+    if(b==="1"){
+      const line=document.createElement("div"); line.className="lineY"; lineWrap.appendChild(line);
+    }else{
+      const line=document.createElement("div"); line.className="lineN"; line.innerHTML="<span></span><span></span>"; lineWrap.appendChild(line);
+    }
+    const tag=document.createElement("div"); tag.className="tag";
+    const lineNoFromBottom=i+1;
+    const isChange = (changeLineIndex!==null && lineNoFromBottom===changeLineIndex);
+    tag.textContent = isChange ? `第${lineNoFromBottom}爻 · 变` : `第${lineNoFromBottom}爻`;
+    if(isChange){ tag.style.borderColor="rgba(47,124,246,.45)"; tag.style.color="var(--accent)"; }
+    row.appendChild(lineWrap); row.appendChild(tag);
+    container.appendChild(row);
+  }
+}
+
+function calcYijing(year,month,day,hour){
+  const sumYMD = year+month+day;
+  const upperIdx = mod(sumYMD, 8);
+  const lowerIdx = mod(sumYMD + hour, 8);
+  const changeLine = mod(sumYMD + hour, 6) + 1;
+  const bitsA = hexBitsFromTrigrams(upperIdx, lowerIdx);
+  const bitsB = applyChange(bitsA, changeLine);
+  const triB = trigramsFromHexBits(bitsB);
+  return {upperIdx, lowerIdx, changeLine, bitsA, bitsB, changedUpperIdx: triB.upperIdx, changedLowerIdx: triB.lowerIdx};
+}
+
+function scoreYijing(upperEl, lowerEl, changeLine){
+  let wealth=60, marriage=60, career=60, health=60;
+  if(GEN[lowerEl]===upperEl){ career+=10; wealth+=6; }
+  if(GEN[upperEl]===lowerEl){ marriage+=10; wealth+=4; }
+  if(KILL[upperEl]===lowerEl){ marriage-=12; health-=8; }
+  if(KILL[lowerEl]===upperEl){ career-=10; wealth-=8; }
+
+  if(changeLine<=2){ wealth+=6; health+=4; }
+  else if(changeLine<=4){ career+=6; marriage+=4; }
+  else { career+=8; wealth+=4; }
+
+  const elBias={
+    "火":{wealth:+4,career:+6,marriage:+2,health:-4},
+    "水":{wealth:-4,career:+2,marriage:-2,health:-6},
+    "土":{wealth:+6,career:+4,marriage:+6,health:+4},
+    "金":{wealth:+6,career:+6,marriage:+2,health:+2},
+    "木":{wealth:+2,career:+4,marriage:-2,health:-2},
+  };
+  [upperEl, lowerEl].forEach(el=>{
+    const b=elBias[el]; wealth+=b.wealth; career+=b.career; marriage+=b.marriage; health+=b.health;
+  });
+
+  return {
+    wealth:clamp(wealth,0,100),
+    marriage:clamp(marriage,0,100),
+    career:clamp(career,0,100),
+    health:clamp(health,0,100),
+  };
+}
+
+function adviceYijing(yj){
+  const upperT=TRIGRAMS[yj.upperIdx], lowerT=TRIGRAMS[yj.lowerIdx];
+  const upper2T=TRIGRAMS[yj.changedUpperIdx], lower2T=TRIGRAMS[yj.changedLowerIdx];
+  const horizon = (yj.changeLine<=2)?"近期/基础":(yj.changeLine<=4)?"中期/执行":"后期/方向";
+  return [
+    `【外在/事业（上卦）】${upperT.keyword}。建议：${upperT.advice}。`,
+    `【内在/关系（下卦）】${lowerT.keyword}。建议：${lowerT.advice}。`,
+    `【变爻】第${yj.changeLine}爻（${horizon}）更容易出现“调整点”。`,
+    `【变卦方向】从“${simpleHexName(yj.upperIdx,yj.lowerIdx)}”转向“${simpleHexName(yj.changedUpperIdx,yj.changedLowerIdx)}”，策略从“${upperT.keyword}/${lowerT.keyword}”逐步转到“${upper2T.keyword}/${lower2T.keyword}”。`,
+    `<b>财运落地：</b>先把“现金流/报价/回款规则”写死，再追增长。`,
+    `<b>婚姻落地：</b>沟通用“事实+计划”，少情绪对抗；先定边界再谈感受。`,
+  ].join("<br><br>");
+}
+
+/* ===================== 八字模块（离线简化） ===================== */
+const STEMS = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+const BRANCHES = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+const STEM_EL = {甲:"木",乙:"木",丙:"火",丁:"火",戊:"土",己:"土",庚:"金",辛:"金",壬:"水",癸:"水"};
+const BR_EL = {子:"水",丑:"土",寅:"木",卯:"木",辰:"土",巳:"火",午:"火",未:"土",申:"金",酉:"金",戌:"土",亥:"水"};
+
+// 日柱：用 JDN 算干支（可靠）
+function toJDN(y,m,d){
+  if(m<=2){ y-=1; m+=12; }
+  const A = Math.floor(y/100);
+  const B = 2 - A + Math.floor(A/4);
+  return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + d + B - 1524.5;
+}
+// 以 1984-02-02 为甲子日
+const REF_Y=1984, REF_M=2, REF_D=2;
+const REF_JDN = toJDN(REF_Y,REF_M,REF_D);
+
+function dayPillar(y,m,d){
+  const jdn = toJDN(y,m,d);
+  const diff = Math.round(jdn - REF_JDN);
+  const idx = mod(diff, 60);
+  const stem = STEMS[idx % 10];
+  const branch = BRANCHES[idx % 12];
+  return {stem, branch, idx60: idx};
+}
+
+// 年柱：按立春约 2/4 切换（简化）
+function yearPillar(y,m,d){
+  const isBeforeLiChun = (m<2) || (m===2 && d<4);
+  const yy = isBeforeLiChun ? (y-1) : y;
+  const base=1984; // 甲子
+  const idx = mod(yy - base, 60);
+  const stem = STEMS[idx % 10];
+  const branch = BRANCHES[idx % 12];
+  return {stem, branch, yearUsed: yy};
+}
+
+// 月柱：寅月起（简化）
+function monthBranchByGregorian(m){
+  const map = {1:"丑",2:"寅",3:"卯",4:"辰",5:"巳",6:"午",7:"未",8:"申",9:"酉",10:"戌",11:"亥",12:"子"};
+  return map[m] || "寅";
+}
+function monthStemStartForYearStem(yearStem){
+  const map = {甲:"丙",己:"丙",乙:"戊",庚:"戊",丙:"庚",辛:"庚",丁:"壬",壬:"壬",戊:"甲",癸:"甲"};
+  return map[yearStem] || "丙";
+}
+function monthPillar(yStem, m){
+  const br = monthBranchByGregorian(m);
+  const order = {寅:0,卯:1,辰:2,巳:3,午:4,未:5,申:6,酉:7,戌:8,亥:9,子:10,丑:11};
+  const startStem = monthStemStartForYearStem(yStem);
+  const startIdx = STEMS.indexOf(startStem);
+  const idx = mod(startIdx + (order[br] ?? 0), 10);
+  return {stem: STEMS[idx], branch: br};
+}
+
+// 时柱
+function hourBranch(h){
+  const idx = mod(Math.floor((h+1)/2), 12);
+  return BRANCHES[idx];
+}
+function hourStemStartForDayStem(dayStem){
+  const map = {甲:"甲",己:"甲",乙:"丙",庚:"丙",丙:"戊",辛:"戊",丁:"庚",壬:"庚",戊:"壬",癸:"壬"};
+  return map[dayStem] || "甲";
+}
+function hourPillar(dayStem, h){
+  const br = hourBranch(h);
+  const start = hourStemStartForDayStem(dayStem);
+  const startIdx = STEMS.indexOf(start);
+  const brIdx = BRANCHES.indexOf(br);
+  const stem = STEMS[mod(startIdx + brIdx, 10)];
+  return {stem, branch: br};
+}
+
+function yinYangStem(s){ return (["甲","丙","戊","庚","壬"].includes(s)) ? "阳":"阴"; }
+function tenGod(dayStem, otherStem){
+  const meEl = STEM_EL[dayStem], otEl = STEM_EL[otherStem];
+  const meYY = yinYangStem(dayStem), otYY = yinYangStem(otherStem);
+
+  const gen = GEN[meEl];
+  const beGen = Object.keys(GEN).find(k=>GEN[k]===meEl);
+  const kill = KILL[meEl];
+  const beKill = Object.keys(KILL).find(k=>KILL[k]===meEl);
+
+  if(otEl===meEl) return (meYY===otYY) ? "比肩" : "劫财";
+  if(otEl===beGen) return (meYY===otYY) ? "偏印" : "正印";
+  if(otEl===gen) return (meYY===otYY) ? "食神" : "伤官";
+  if(otEl===beKill) return (meYY===otYY) ? "七杀" : "正官";
+  if(otEl===kill) return (meYY===otYY) ? "偏财" : "正财";
+  return "未知";
+}
+
+function countElements(pillars){
+  const c = {木:0,火:0,土:0,金:0,水:0};
+  pillars.forEach(p=>{
+    c[STEM_EL[p.stem]]++;
+    c[BR_EL[p.branch]]++;
+  });
+  return c;
+}
+
+function scoreBazi(pillars){
+  const dayStem = pillars.day.stem;
+  const meEl = STEM_EL[dayStem];
+  const counts = countElements([pillars.year,pillars.month,pillars.day,pillars.hour]);
+
+  const beGenEl = Object.keys(GEN).find(k=>GEN[k]===meEl);
+  const genEl = GEN[meEl];
+  const killEl = KILL[meEl];
+  const beKillEl = Object.keys(KILL).find(k=>KILL[k]===meEl);
+
+  const same = counts[meEl] + counts[beGenEl];
+  const diff = counts[genEl] + counts[killEl] + counts[beKillEl];
+
+  const balance = 100 - Math.abs(same - diff) * 12;
+  const base = clamp(balance, 25, 90);
+
+  let wealth = base + counts[killEl]*6 - counts[beKillEl]*3;
+  let career = base + counts[beKillEl]*5 + counts[beGenEl]*3 - counts[genEl]*2;
+  let health = base - (Math.max(...Object.values(counts)) - 2) * 8;
+  health = clamp(health, 25, 95);
+
+  const g = $("#gender").value;
+  let marriage = base;
+  if(g==="male") marriage += counts[killEl]*6 - counts[genEl]*2;
+  else if(g==="female") marriage += counts[beKillEl]*6 - counts[genEl]*2;
+  else marriage += (counts[killEl]+counts[beKillEl])*3 - counts[genEl]*2;
+
+  wealth = clamp(wealth, 20, 98);
+  career = clamp(career, 20, 98);
+  marriage = clamp(marriage, 20, 98);
+
+  return {wealth, marriage, career, health, counts, same, diff, meEl};
+}
+
+function adviceBazi(pillars, s){
+  const dayStem = pillars.day.stem;
+  const meEl = s.meEl;
+  const beGenEl = Object.keys(GEN).find(k=>GEN[k]===meEl);
+  const killEl = KILL[meEl];
+
+  const strongWeak = (s.same >= s.diff+1) ? "偏强/能扛" : (s.diff >= s.same+1 ? "偏弱/易累" : "中和/可进可守");
+
+  return [
+    `日主：<b>${dayStem}${meEl}</b>｜强弱：<b>${strongWeak}</b>（同类=${s.same}，异类=${s.diff}）`,
+    `补救方向（启发式）：如果你觉得“累/扛不住”，优先补<b>${beGenEl}</b>与<b>${meEl}</b>的稳定性（规律作息、流程化、减少内耗）。`,
+    `财运打法：财（${killEl}）不是越多越好，关键是“<b>可控现金流</b> + <b>规则回款</b>”。`,
+    `感情打法：少用情绪对抗，用“事实+计划+边界”沟通；关键矛盾往往在现实压力与节奏不同。`,
+    `事业打法：选“能沉淀复利”的赛道（客户池/渠道/标准化），不要长期做纯体力内耗型工作。`,
+  ].join("<br><br>");
+}
+
+function luckSimple(pillars, birthY){
+  const steps = [];
+  let startAge = 6;
+  steps.push(`起运年龄（简化估算）：约 <b>${startAge} 岁</b>（离线轻量版；要精确我可升级节气算法）。`);
+  steps.push(`大运方向：每 10 年一运（仅做提示）。你要精准“哪一年大转折”，建议后续升级节气版。`);
+  steps.push(`<b>2026（丙午·火旺）提示：</b>火旺年通常带来“忙、压、曝光、冲突”。如果你感觉压力大，优先：睡眠 + 现金流 + 拒绝无效社交。`);
+  return steps.join("<br>");
+}
+
+/* ===================== 综合（易经+八字） ===================== */
+function mixScores(yjS, bzS){
+  const mix = {
+    wealth: Math.round(yjS.wealth*0.4 + bzS.wealth*0.6),
+    marriage: Math.round(yjS.marriage*0.4 + bzS.marriage*0.6),
+    career: Math.round(yjS.career*0.4 + bzS.career*0.6),
+    health: Math.round(yjS.health*0.4 + bzS.health*0.6),
+  };
+  return mix;
+}
+
+/* ===================== 画五行图（浅色主题适配） ===================== */
+function drawWx(canvas, counts){
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const keys = ["木","火","土","金","水"];
+  const vals = keys.map(k=>counts[k]||0);
+  const maxV = Math.max(...vals, 1);
+
+  const padL=70, padR=20, padT=20, padB=40;
+  const x0=padL, y0=H-padB, x1=W-padR, y1=padT;
+
+  // 轴线（浅灰）
+  ctx.strokeStyle = "rgba(15,23,42,.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.stroke();
+
+  const gap = (x1-x0)/keys.length;
+
+  // 柱子（清爽蓝渐变）
+  const grad = ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0, "rgba(47,124,246,.85)");
+  grad.addColorStop(1, "rgba(123,189,255,.85)");
+  ctx.fillStyle = grad;
+
+  ctx.font = "18px ui-monospace, Menlo, Consolas";
+  ctx.textAlign="center";
+  ctx.textBaseline="alphabetic";
+
+  keys.forEach((k,i)=>{
+    const v = vals[i];
+    const barW = gap*0.55;
+    const x = x0 + gap*(i+0.5);
+    const h = (y0-y1) * (v/maxV);
+    ctx.fillRect(x-barW/2, y0-h, barW, h);
+
+    // label
+    ctx.fillStyle="rgba(15,23,42,.85)";
+    ctx.fillText(k, x, H-14);
+
+    ctx.fillStyle="rgba(100,116,139,.95)";
+    ctx.fillText(String(v), x, y0-h-8);
+
+    ctx.fillStyle = grad;
+  });
+}
+
+/* ===================== 记录/导出 ===================== */
+const STORAGE_KEY="yijing_bazi_all_records_v1";
+function loadRecords(){
+  try{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):[]; }
+  catch(e){ return []; }
+}
+function saveRecords(recs){ localStorage.setItem(STORAGE_KEY, JSON.stringify(recs)); }
+function renderHistory(){
+  const tbody = $("#historyTable tbody");
+  const recs = loadRecords();
+  tbody.innerHTML="";
+  recs.slice().reverse().forEach((r, idxRev)=>{
+    const idx = recs.length-1-idxRev;
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${r.savedAt}</td>
+      <td class="mono">${r.birthDate} ${r.birthTime}</td>
+      <td>${r.yjHexA}</td>
+      <td>${r.bzDay}</td>
+      <td>
+        <button data-act="load" data-idx="${idx}" style="width:auto;padding:6px 10px">载入</button>
+        <button data-act="del" data-idx="${idx}" style="width:auto;padding:6px 10px;margin-left:6px">删除</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll("button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const act=btn.dataset.act;
+      const idx=parseInt(btn.dataset.idx,10);
+      const recs=loadRecords();
+      if(!recs[idx]) return;
+      if(act==="load"){
+        $("#birthDate").value = recs[idx].birthDate;
+        $("#birthTime").value = recs[idx].birthTime;
+        $("#gender").value = recs[idx].gender;
+        $("#memo").value = recs[idx].memo;
+        calcAndRender();
+      }else{
+        recs.splice(idx,1); saveRecords(recs); renderHistory();
+      }
+    });
+  });
+}
+
+/* ===================== 主流程 ===================== */
+let yjS=null, bzS=null, mix=null;
+
+function calcAndRender(){
+  const dateStr = $("#birthDate").value;
+  if(!dateStr){ alert("请先选择出生日期"); return; }
+  const timeStr = $("#birthTime").value || "06:00";
+  const [hh] = timeStr.split(":").map(n=>parseInt(n,10));
+  const hour = Number.isFinite(hh) ? hh : 0;
+
+  const d = new Date(dateStr+"T00:00:00");
+  const y = d.getFullYear(), m = d.getMonth()+1, dd = d.getDate();
+
+  // 易经
+  const yj = calcYijing(y,m,dd,hour);
+  const upperEl = TRIGRAMS[yj.upperIdx].element;
+  const lowerEl = TRIGRAMS[yj.lowerIdx].element;
+  yjS = scoreYijing(upperEl, lowerEl, yj.changeLine);
+
+  $("#yjPills").innerHTML = `
+    <span class="pill">本卦：<b class="k">${simpleHexName(yj.upperIdx,yj.lowerIdx)}</b></span>
+    <span class="pill">变爻：<b class="k">第${yj.changeLine}爻</b></span>
+    <span class="pill">上卦：${TRIGRAMS[yj.upperIdx].name}（${upperEl}）</span>
+    <span class="pill">下卦：${TRIGRAMS[yj.lowerIdx].name}（${lowerEl}）</span>
+  `;
+  $("#hexNameA").textContent = simpleHexName(yj.upperIdx,yj.lowerIdx);
+  $("#hexInfoA").textContent = `外在/事业：${TRIGRAMS[yj.upperIdx].keyword}｜内在/关系：${TRIGRAMS[yj.lowerIdx].keyword}`;
+  renderHexLines($("#hexLinesA"), yj.bitsA, yj.changeLine);
+  $("#hexNameB").textContent = simpleHexName(yj.changedUpperIdx,yj.changedLowerIdx);
+  $("#hexInfoB").textContent = `变化后策略：${TRIGRAMS[yj.changedUpperIdx].keyword}｜${TRIGRAMS[yj.changedLowerIdx].keyword}`;
+  renderHexLines($("#hexLinesB"), yj.bitsB, yj.changeLine);
+  renderScoreBox($("#scoresYJ"), [
+    {k:"财运", v:yjS.wealth},
+    {k:"婚姻/感情", v:yjS.marriage},
+    {k:"事业", v:yjS.career},
+    {k:"健康/状态", v:yjS.health},
+  ]);
+  $("#adviceYJ").innerHTML = adviceYijing(yj);
+
+  // 八字
+  const yp = yearPillar(y,m,dd);
+  const mp = monthPillar(yp.stem, m);
+  const dp = dayPillar(y,m,dd);
+  const hp = hourPillar(dp.stem, hour);
+  const pillars = {year: yp, month: mp, day: dp, hour: hp};
+
+  bzS = scoreBazi(pillars);
+
+  $("#bzPills").innerHTML = `
+    <span class="pill">年柱：<b class="k">${yp.stem}${yp.branch}</b></span>
+    <span class="pill">月柱：<b class="k">${mp.stem}${mp.branch}</b></span>
+    <span class="pill">日柱：<b class="k">${dp.stem}${dp.branch}</b>（日主）</span>
+    <span class="pill">时柱：<b class="k">${hp.stem}${hp.branch}</b></span>
+  `;
+
+  const tg = s => tenGod(dp.stem, s);
+  $("#baziTable").textContent =
+`年柱：${yp.stem}${yp.branch}（${tg(yp.stem)}）
+月柱：${mp.stem}${mp.branch}（${tg(mp.stem)}）
+日柱：${dp.stem}${dp.branch}（日主）
+时柱：${hp.stem}${hp.branch}（${tg(hp.stem)}）`;
+
+  renderScoreBox($("#scoresBZ"), [
+    {k:"财运", v:bzS.wealth},
+    {k:"婚姻/感情", v:bzS.marriage},
+    {k:"事业", v:bzS.career},
+    {k:"健康/状态", v:bzS.health},
+  ]);
+  $("#adviceBZ").innerHTML = adviceBazi(pillars, bzS);
+  $("#luckBZ").innerHTML = luckSimple(pillars, y);
+
+  // 综合
+  mix = mixScores(yjS, bzS);
+
+  $("#summaryPills").innerHTML = `
+    <span class="pill">出生：<span class="mono">${y}-${String(m).padStart(2,"0")}-${String(dd).padStart(2,"0")} ${String(hour).padStart(2,"0")}:00</span></span>
+    <span class="pill">易经：<b class="k">${simpleHexName(yj.upperIdx,yj.lowerIdx)}</b>（变第${yj.changeLine}爻）</span>
+    <span class="pill">八字日主：<b class="k">${dp.stem}${dp.branch}</b></span>
+  `;
+  renderScoreBox($("#scoresAll"), [
+    {k:"财运", v:mix.wealth},
+    {k:"婚姻/感情", v:mix.marriage},
+    {k:"事业", v:mix.career},
+    {k:"健康/状态", v:mix.health},
+  ]);
+  $("#adviceAll").innerHTML = (function(){
+    const lines = [];
+    lines.push(`<b>总判断：</b>这次结果更偏“${(mix.career>=mix.wealth && mix.career>=mix.marriage)? "事业驱动" : (mix.wealth>=mix.marriage?"财务驱动":"关系驱动") }”。`);
+    lines.push(`<b>最稳的一招：</b>把现金流与作息稳定下来，你的整体分会直接上去。`);
+    lines.push(`<b>2026 提示：</b>火旺年更容易“忙/压/冲”，别靠情绪做决策。`);
+    return lines.join("<br><br>");
+  })();
+
+  drawWx($("#canvasWx"), bzS.counts);
+
+  return {y,m,dd,hour,yj,pillars};
+}
+
+/* ===================== 保存/导出/导入 ===================== */
+$("#btnSave").addEventListener("click", ()=>{
+  const out = calcAndRender();
+  if(!out) return;
+  const rec = {
+    savedAt: nowStr(),
+    birthDate: $("#birthDate").value,
+    birthTime: $("#birthTime").value || "06:00",
+    gender: $("#gender").value,
+    memo: $("#memo").value.trim(),
+    yjHexA: simpleHexName(out.yj.upperIdx, out.yj.lowerIdx),
+    yjChangeLine: out.yj.changeLine,
+    bzDay: `${out.pillars.day.stem}${out.pillars.day.branch}`,
+    yjScores: yjS,
+    bzScores: bzS,
+    mixScores: mix,
+    bazi: out.pillars
+  };
+  const recs = loadRecords();
+  recs.push(rec);
+  saveRecords(recs);
+  renderHistory();
+  alert("已保存到本机记录 ✅（建议定期导出JSON备份）");
+});
+
+$("#btnExport").addEventListener("click", ()=>{
+  const recs = loadRecords();
+  const json = JSON.stringify(recs, null, 2);
+  const blob = new Blob([json], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `yijing_bazi_records_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+$("#btnImport").addEventListener("click", ()=>{
+  try{
+    const txt = $("#importBox").value.trim();
+    if(!txt) { alert("请先粘贴JSON"); return; }
+    const data = JSON.parse(txt);
+    if(!Array.isArray(data)) { alert("JSON格式不对：应为数组"); return; }
+    saveRecords(data);
+    renderHistory();
+    alert("导入成功 ✅");
+  }catch(e){
+    alert("导入失败：JSON解析错误");
+  }
+});
+
+/* ===================== Tab切换 ===================== */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    const page = t.dataset.page;
+    ["pageAll","pageYJ","pageBZ","pageHistory"].forEach(id=>{
+      $("#"+id).classList.toggle("hide", id!==page);
+    });
+  });
+});
+
+$("#btnCalc").addEventListener("click", ()=>{ calcAndRender(); });
+
+/* ===================== 初始化 ===================== */
+(function init(){
+  const today=new Date();
+  const pad=n=>String(n).padStart(2,"0");
+  $("#birthDate").value = `${today.getFullYear()-20}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  renderHistory();
+})();
+</script>
+</body>
+</html>
